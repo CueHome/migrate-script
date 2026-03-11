@@ -56,23 +56,16 @@ stop_old_agent() {
     systemctl stop meshagent 2>/dev/null || true
     service meshagent stop 2>/dev/null || true
 
-    pkill -TERM -f /usr/local/mesh_services/meshagent/meshagent 2>/dev/null || true
-    pkill -TERM -f '/meshagent([[:space:]]|$)' 2>/dev/null || true
+    pkill -TERM -f '^/usr/local/mesh_services/meshagent/meshagent([[:space:]]|$)' 2>/dev/null || true
+    sleep 5
 
-    sleep 3
-
-    if pgrep -f '/meshagent([[:space:]]|$)' >/dev/null 2>&1; then
+    if pgrep -f '^/usr/local/mesh_services/meshagent/meshagent([[:space:]]|$)' >/dev/null 2>&1; then
         log "Old MeshAgent still running, forcing stop..."
-        pkill -KILL -f /usr/local/mesh_services/meshagent/meshagent 2>/dev/null || true
-        pkill -KILL -f '/meshagent([[:space:]]|$)' 2>/dev/null || true
+        pkill -KILL -f '^/usr/local/mesh_services/meshagent/meshagent([[:space:]]|$)' 2>/dev/null || true
         sleep 2
     fi
 
-    if pgrep -f '/meshagent([[:space:]]|$)' >/dev/null 2>&1; then
-        die "Could not stop old MeshAgent process"
-    fi
-
-    log "Old MeshAgent stopped"
+    log "Stop command issued"
 }
 
 patch_agent_name() {
