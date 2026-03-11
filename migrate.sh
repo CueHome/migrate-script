@@ -178,6 +178,23 @@ sed -i '/echo "StartupType=\$starttype" >> \.\/meshagent2\.msh/a\  echo "agentNa
 #===========================================
 chmod 755 $INSTALL_SCRIPT
 
+
+log "Stopping any existing MeshAgent service..."
+
+systemctl stop meshagent 2>/dev/null || service meshagent stop 2>/dev/null || true
+pkill -f /usr/local/mesh_services/meshagent/meshagent 2>/dev/null || true
+pkill -f meshagent 2>/dev/null || true
+sleep 3
+
+if pgrep -f meshagent >/dev/null 2>&1; then
+    log_error "Existing meshagent process is still running"
+    pgrep -a -f meshagent >> "$MIGRATION_LOG" 2>&1
+    exit 1
+fi
+
+log_success "Existing MeshAgent stopped"
+
+
 #===========================================
 # Install New Agent
 #===========================================
