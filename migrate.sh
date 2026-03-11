@@ -10,7 +10,8 @@
 NEW_SERVER="https://remote.cuehome.in"
 INSTALL_KEY='AED3OdxW512t0YP2pK8@vFxU@M5BDmygbAD1$UBMa7adE2SXU9EHjO@nxJ2Ctj3j'
 MIGRATION_LOG="/var/log/mesh-migration.log"
-INSTALL_SCRIPT="/tmp/meshinstall.sh"
+WORK_DIR="$(mktemp -d /tmp/meshinstall.XXXXXX)"
+INSTALL_SCRIPT="$WORK_DIR/meshinstall.sh"
 LOCK_FILE="/tmp/mesh-migration.lock"
 SUCCESS_MARKER="/tmp/mesh-migration-success"
 
@@ -34,7 +35,12 @@ if [ -f "$LOCK_FILE" ]; then
 fi
 
 echo $$ > "$LOCK_FILE"
-trap "rm -f $LOCK_FILE" EXIT
+
+cleanup() {
+    rm -f "$LOCK_FILE"
+    rm -rf "$WORK_DIR"
+}
+trap cleanup EXIT
 
 #===========================================
 # Functions
@@ -154,20 +160,18 @@ fi
 log_success "Script validation passed (size: $SCRIPT_SIZE bytes)"
 
 #===========================================
-# Assign ID in Meshcentral
+# Assign ID in MeshCentral
 #===========================================
-# Line before for identification
-pattern="  # Add the startup type to the file"
-
-# Extract ID
 id=$(sed -n 's/.*"ID":[[:space:]]*"\([^"]*\)".*/\1/p' /home/pi/.metacbs/device.json)
-echo "$id"
-log_success "ID extracted: $id"
-# Line to add
-new_line='   echo "agentName='$id'" >> ./meshagent2.msh'
 
-# Use sed to add the line after the specified pattern
-sed -i "/$pattern/a $new_line" $INSTALL_SCRIPT
+if [ -z "$id" ]; then
+    log_error "Could not extract ID from /home/pi/.metacbs/device.json"
+    exit 1
+fi
+
+log_success "ID extracted: $id"
+
+sed -i '/echo "StartupType=\$starttype" >> \.\/meshagent2\.msh/a\  echo "agentName='"$id"'" >> ./meshagent2.msh' "$INSTALL_SCRIPT"
 
 #===========================================
 # Make Script Executable
@@ -180,17 +184,22 @@ chmod 755 $INSTALL_SCRIPT
 log "Installing new MeshCentral agent..."
 log "This may take 30-60 seconds..."
 
-# Redirect output to avoid terminal dependency
-sudo -E $INSTALL_SCRIPT $NEW_SERVER "$INSTALL_KEY" >> $MIGRATION_LOG 2>&1
+(
+    cd "$WORK_DIR" || exit 1
+    sudo -E bash "$INSTALL_SCRIPT" "$NEW_SERVER" "$INSTALL_KEY"
+) >> "$MIGRATION_LOG" 2>&1
 INSTALL_EXIT_CODE=$?
 
 if [ $INSTALL_EXIT_CODE -eq 0 ]; then
     log_success "Agent installation completed"
 else
     log "Installation returned code $INSTALL_EXIT_CODE, trying fallback..."
-    $INSTALL_SCRIPT $NEW_SERVER "$INSTALL_KEY" >> $MIGRATION_LOG 2>&1
+    (
+        cd "$WORK_DIR" || exit 1
+        bash "$INSTALL_SCRIPT" "$NEW_SERVER" "$INSTALL_KEY"
+    ) >> "$MIGRATION_LOG" 2>&1
     INSTALL_EXIT_CODE=$?
-    
+
     if [ $INSTALL_EXIT_CODE -eq 0 ]; then
         log_success "Agent installation completed (fallback method)"
     else
