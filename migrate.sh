@@ -162,7 +162,7 @@ pattern="  # Add the startup type to the file"
 # Extract ID
 id=$(sed -n 's/.*"ID":[[:space:]]*"\([^"]*\)".*/\1/p' /home/pi/.metacbs/device.json)
 echo "$id"
-
+log_success "ID extracted: $id"
 # Line to add
 new_line='   echo "agentName='$id'" >> ./meshagent2.msh'
 
