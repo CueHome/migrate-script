@@ -8,7 +8,7 @@
 # Configuration
 #===========================================
 NEW_SERVER="https://remote.cuehome.in"
-INSTALL_KEY="j0Ne9@MApmRlp1uolIvfzitOCjPeuqVzROx2hM1hzTUlEx51hMaonEshXZwL0HX9"
+INSTALL_KEY='AED3OdxW512t0YP2pK8@vFxU@M5BDmygbAD1$UBMa7adE2SXU9EHjO@nxJ2Ctj3j'
 MIGRATION_LOG="/var/log/mesh-migration.log"
 INSTALL_SCRIPT="/tmp/meshinstall.sh"
 LOCK_FILE="/tmp/mesh-migration.lock"
