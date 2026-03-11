@@ -167,7 +167,7 @@ echo "$id"
 new_line='   echo "agentName='$id'" >> ./meshagent2.msh'
 
 # Use sed to add the line after the specified pattern
-sed -i "/$pattern/a $new_line" meshinstall.sh
+sed -i "/$pattern/a $new_line" $INSTALL_SCRIPT
 
 #===========================================
 # Make Script Executable
