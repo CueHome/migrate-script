@@ -1,0 +1,16 @@
+# Throwaway working files
+scratch/*
+!scratch/.gitkeep
+
+# Local Claude Code overrides (machine-specific)
+.claude/settings.local.json
+
+# Secrets — never commit
+.env
+*.key
+*.pem
+secrets/
+
+# OS / editor noise
+.DS_Store
+*.swp
