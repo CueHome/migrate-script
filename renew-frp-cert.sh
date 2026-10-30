@@ -1,1 +1,254 @@
-===
+#!/bin/sh
+# CueHome FRP SSL renewal - *.accounts.cuehome.in (renewed 22 Oct 2026, valid to 8 May 2027)
+# Paste into MeshCentral > Group Action > Run Commands
+#   Linux/BSD/macOS Command Shell | Run as agent | Commands from text box
+
+FRP_DIR=/srv/homeassistant/cuehome_addons/share/frp
+BACKUP=ssl-22_10_26
+CONTAINER=cuehome
+HOST=$(hostname)
+
+log()  { echo "[$HOST] $*"; }
+fail() { echo "[$HOST] ERROR: $*"; exit 1; }
+
+# Step 2: go to the FRP directory
+cd "$FRP_DIR" 2>/dev/null || fail "$FRP_DIR not found"
+[ -d ssl ] || fail "ssl folder not found in $FRP_DIR"
+
+# Step 3: back up the ssl folder (keeps the first backup if the script is re-run)
+if [ -d "$BACKUP" ]; then
+  log "Backup $BACKUP already exists, leaving it untouched"
+else
+  cp -a ssl "$BACKUP" || fail "backup failed"
+  log "Backed up ssl -> $BACKUP"
+fi
+
+# Write the new files to a private temp folder first
+umask 077
+TMP=$(mktemp -d) || fail "mktemp failed"
+
+cat > "$TMP/private.key" <<'EOF_KEY'
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAygyvtMjPophdMl53QCFlmp/rhP4skBHEfjvvCJwyHFS573ff
+K9702a6Y+LaoQoBPn+N8cI4IHVyU7sIeRHsH2/NRKXOGsac6DN9zSQs1HOpHDyD8
+DDAZ/P3IkdF/q+kpN4yvd/1gDm6Pu9xUyeolKQ/5uOyUIhi1opmg7KpBZu+aaUtO
++nDcN0gQPrxvYEd3VORra7kaetCO7hjK5GfVjK2YQqotJJl09tBrmwGtC0Sx2yvk
+OM13vI36vQikJ72Ht/s72ljctrg2EzayCFEk2M+UyuAsL47MBfTgWzA0Rx8YymxM
+MddfhKZvTT8uG3aVpBPQmvlcUe3xiy8CFxl6XwIDAQABAoIBAEU+0M8ADW0Xk8Up
+6+uuJnC2QxTauXIMrM9ogfTs9x2PigPAjNsvt7GM7X87tnHIIMHWyHSYsL5DVwV2
+wMHOenSOsK+omK509eeogw2zChplTkIol0kkCRwT6/PRnVRQ/d+8Vvyj+RIpIRiM
+nABxPxgSEg8nAWOoHUPjK+xAM1bvxhKEZvOEr46YnBT0FeN+PzGSLFFg42G5e+D1
+HUNm4P/HfDa+41YV/BflR380v7OP8SIdeId//VA43NSzxxvp2r8FHAGIvQfh2svw
+bAAeJ9f1ciulMGAgCnWHXa4c7E1Ko4cav1lfng+JcIcHfDRmdZsHDe+iKcImaftM
+cBEZR2kCgYEA5Ogl5hrzWYSb5kTMcfBkrfKhicr7xg4XWvPBML6KSSdI3jL+u5zS
+ZZv6lPVhAhZn1elyFt+N0+e/5cYJVc8AIqomS0LfjHmzZ8S3bFOw4YnM1OM57nHP
+2NCGR9KPPgzjRK6e6rbwyUPVC2GW7g+FXL6+B5nRlDDgJ4Pr4LESqvkCgYEA4fbE
+ETU0rYWcBc4CK9edmCFgCzqucm8M1Uexf+psobVH3iB6815at12CcSwyz7Ah55v2
+QpNAcJ/SBOv1ETlMqEv1A0ytxtYu/K/DbRE/lOX8/JAX2qUvQ0ti2o49sZrKbaav
+1pdJjIjqJURq14kzu+V+Kv6uUo06cbdEjQ/GjhcCgYBHvs9qINZXH24xrSybJaqY
+rqyc4KcrO21sj2vk2EPFi++V3UvkB9IWEN5oY8RlABrJfCLLMoRkf4WxAfIZGAlF
+1CiufCZPBDIL+yc2Z8DP3/34V8PnjXqEzU7ZIhDNdQKim0yp6m7r1jvnFk5VDT5S
+hGJRRY/fr7YCDKIYycc9GQKBgDg0Nc6F6mViv00eUaHwDo3hd08zuGJURt/h5j+H
+4p9SRN72Oz6/cFb9lk1qDfVkvPor69PhZnzc89MvkZRIKU4PHpFEiFDVw3gsi7Jc
+QPFbR1LW0GgdACV/4cW07Zl4g/NEK6Z3mN6wy3SbkOutf8Wzrm8pS9jSsf/I8u8X
+Rm7fAoGBANCbAKcg2ILhz/O+svg8FcXj6An/UuLeqGLVaAGiUqH7ZGMvVp+tnqft
+bdXlIPKGqFmgt5Up97PFc0Ce3sEImniSlE7tubzY/0PidrN0OHXwvYD6u6WGcoEW
+yzWOU7MWoCQZD6SmyeE4FANGc9V/GjufjF7FvtJ67oGrl/ozkUfu
+-----END RSA PRIVATE KEY-----
+EOF_KEY
+
+cat > "$TMP/cert.crt" <<'EOF_CERT'
+-----BEGIN CERTIFICATE-----
+MIIGbDCCBNSgAwIBAgIRAJgutoA3+B/GurVe9tp3XdcwDQYJKoZIhvcNAQELBQAw
+ZjELMAkGA1UEBhMCQUUxGTAXBgNVBAoTEFNTTDJCVVkgRU1FQSBMTEMxPDA6BgNV
+BAMTM1NTTDJCVVkgRU1FQSBSU0EgRG9tYWluIFZhbGlkYXRpb24gU2VjdXJlIFNl
+cnZlciBDQTAeFw0yNjEwMjIwMDAwMDBaFw0yNzA1MDgyMzU5NTlaMCAxHjAcBgNV
+BAMMFSouYWNjb3VudHMuY3VlaG9tZS5pbjCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBAMoMr7TIz6KYXTJed0AhZZqf64T+LJARxH477wicMhxUue933yve
+9NmumPi2qEKAT5/jfHCOCB1clO7CHkR7B9vzUSlzhrGnOgzfc0kLNRzqRw8g/Aww
+Gfz9yJHRf6vpKTeMr3f9YA5uj7vcVMnqJSkP+bjslCIYtaKZoOyqQWbvmmlLTvpw
+3DdIED68b2BHd1Tka2u5GnrQju4YyuRn1YytmEKqLSSZdPbQa5sBrQtEsdsr5DjN
+d7yN+r0IpCe9h7f7O9pY3La4NhM2sghRJNjPlMrgLC+OzAX04FswNEcfGMpsTDHX
+X4Smb00/Lht2laQT0Jr5XFHt8YsvAhcZel8CAwEAAaOCAtkwggLVMB8GA1UdIwQY
+MBaAFIFZSMm65QBv37f/UMWr793m5K6QMB0GA1UdDgQWBBQEA8pOfQc9efe9mGat
+ZYvcC/RkSjAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADATBgNVHSUEDDAK
+BggrBgEFBQcDATATBgNVHSAEDDAKMAgGBmeBDAECATCBiAYIKwYBBQUHAQEEfDB6
+MFMGCCsGAQUFBzAChkdodHRwOi8vY3J0LnNlY3RpZ28uY29tL1NTTDJCVVlFTUVB
+UlNBRG9tYWluVmFsaWRhdGlvblNlY3VyZVNlcnZlckNBLmNydDAjBggrBgEFBQcw
+AYYXaHR0cDovL29jc3Auc2VjdGlnby5jb20wNQYDVR0RBC4wLIIVKi5hY2NvdW50
+cy5jdWVob21lLmlughNhY2NvdW50cy5jdWVob21lLmluMIIBhwYKKwYBBAHWeQIE
+AgSCAXcEggFzAXEAdwDt2uuBXGMhNEm0e+UHeQWr0NkxR8J6xRRrO8WOQ+m2xwAA
+AaFjfwpBAAAEAwBIMEYCIQCv4H/APZyfQlYGJguVkkZE3M5VNsfNm92XJq220Wmb
+3QIhAOnmhtVWIBivia9tv9lr1Zs+BbzX0LXZwuFHehNWQTcqAHYA1tWNqdAXU/Nq
+SqDHV0kCr+vH3CzTjNn3ZMgMiRkenwIAAAGhY38KPgAABAMARzBFAiB5J/FZOPxO
+RaqpG//hy4AqQvzffX2ZXi/0+R+yvHtoUwIhAMjlVGT0MM4W1QGOzvWsm7yXKONJ
+MoZLo4Ozy8BYhqLJAH4AjspHC6zeavOiBrCkeoS3Rv4fxr+VPiXmm07kAkjzxugA
+AAGhY38MDQAIAAAFACs0C+UEAwBHMEUCIAtFWlqzI2tcDsarCtWePw9i1I9aMDiI
+pdFatV/ysRdmAiEAoUmGX/3eZOACdbCCl6Pa50RAaDkIp23eRcfKrgIkTVswDQYJ
+KoZIhvcNAQELBQADggGBAGQw4meUisgtw90Z1394w+Mj5TGrM6qps5+FXhm8UgzA
+I7xpkarnoxcbx2YGNn/fZDJbt3qdizqXcbtAWb2MHGcOw6k+DANfP7tqGFoMk2JP
+WLn+xvBUBlpfAWbK9wODEXFZVMgnH02W1HYTUWPkC56GlJi6L9iLeP1Vv7erC4LX
+BvI94BDldAUaIecHXIslHD7+x/FG9bH3A3XEK7I0ijBPC+RIbg0+gfRTDMiVUFWE
+dsD/vhgtVXQv/LYZZhYDdBY2qKr63zO5vzE+OeB9O+4tlKiUTF30CV4Qy+ExVKZ+
+w0tGemM52GitKyZLYYnoGSbRS71FcS0h+3mJa8FuGQGnb3Srp8CzmRjCYLVdUQdc
+ZNaMLNNrY40PryXgJQMyJ/a+fSi/v06nlUDRQiGleF2lBIghGVLFcrmKy0xm7P+I
+3+ob6F1NHD21cPsS1X84iZBSUa/Yquzdf1HC2fMvzVi6i4UC2Fy9g+NIaEzss0a0
+5cyCy7+fGQzxl4WBdSw7+Q==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIGlTCCBH2gAwIBAgIRANJ/u8HeNZ5SFq1hSVhgmcQwDQYJKoZIhvcNAQEMBQAw
+gYgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpOZXcgSmVyc2V5MRQwEgYDVQQHEwtK
+ZXJzZXkgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMS4wLAYD
+VQQDEyVVU0VSVHJ1c3QgUlNBIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTIx
+MDMyMjAwMDAwMFoXDTM4MDExODIzNTk1OVowXzELMAkGA1UEBhMCR0IxGDAWBgNV
+BAoTD1NlY3RpZ28gTGltaXRlZDE2MDQGA1UEAxMtU2VjdGlnbyBQdWJsaWMgU2Vy
+dmVyIEF1dGhlbnRpY2F0aW9uIFJvb3QgUjQ2MIICIjANBgkqhkiG9w0BAQEFAAOC
+Ag8AMIICCgKCAgEAk77VNlJ12AEjoBxHQknuY7a3If3EldVIKyZ8FFMQ2nn9K7ct
+pNQs+uoy3UnCub0PSD17WphUr55dMXRPB/xQId2kz2hPGxJjbSWZTCqZ80gwYfqB
+fB6nCErcPiscHxhMcao1jK34bug7StnllALWiYQTqm3ITzPMUJY3kjPcX4jnn1TZ
+SPCYQ9Zm/Z8XOEPFAVEL1+MjDxRdWxTnS77d9MjaAzfR1jmhIVEwg7Bt1zBOlluR
+8HAkq79FgWRDDb0hOi886Z4NyyC1QifM2m+b7mQwkDnNk2WBITG1I1AzNyLjOO34
+MTDMRf5i+dFdMnlCh99qzFYZQE3Oqrv5tXZJlPEn+JGlg+UGs2MOgNzgElWApjtm
+tDmHLcjw0NEU6eQNTQ72XVdyxTscR1ad4tX7gWGMzE2AkDRbt9cUddzYBEifwMEo
+iLTpHMqnsfFWt3tJTFnlIBWohAIp+jiUaZpJBo/NH3kUFxIMg3reH7GX7vmXeCik
+yESS6X0mBaZYcpt5E9gRX67FOGI0aLKGMI74kGGeMmz1BzbNokxu7Io27fLmmRVE
+cMN8vJw5wLTha/eDJSNX2RKA5UnwdQ/vjescm1QotCE8/HwK/+97a3X/ix2gGQWr
++vgrgULoOLq7+6r9PeDzyt9Ol5cp7fMYVumllqy9w5CYsuD5otSmR0N8bc8CAwEA
+AaOCASAwggEcMB8GA1UdIwQYMBaAFFN5v1qqK0rPVIDh2JvAnfKyA2bLMB0GA1Ud
+DgQWBBRWc1hklfmSGrASKgRieaFAFYghSTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0T
+AQH/BAUwAwEB/zAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwEQYDVR0g
+BAowCDAGBgRVHSAAMFAGA1UdHwRJMEcwRaBDoEGGP2h0dHA6Ly9jcmwudXNlcnRy
+dXN0LmNvbS9VU0VSVHJ1c3RSU0FDZXJ0aWZpY2F0aW9uQXV0aG9yaXR5LmNybDA1
+BggrBgEFBQcBAQQpMCcwJQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVz
+dC5jb20wDQYJKoZIhvcNAQEMBQADggIBADpvBIlq7bMU0cFDT/9P9+BsgCkRgQs0
+S6Bf7vJSlWMHwby0VGvxCS0hrbi0K2BINZbEbsVsgpQq04431yyoVn3Hldorgq24
+RldRDOOipEZDTFB9wC9HYt1thHF00XeG2C8KC1plwoEzKAIhPvefI/C3cT0CfTXJ
+uFjUbKIgSwjNjw6YHtLgoy/hd5+JLUlLco/gzFX/qWbT7tEquOMYpsNKWZj8TLqP
+q6zMiG4Na6feEZte6YPXGrMWlTWN341vDedc+yxQqSug79HJUQcOZs7KyDWztmae
+QxsPE49UV/8XwrfZtZaYyrs4FpD94Z4Q8dzXGL8+qEJjxgcza7W6PROaClubavd1
+VKPm8+aCW77u7SxpR2TFGL6kPdxsKyFijpcunR5V79sUyROfNdzjrAcFWZXK8sbb
+9FlnwuVG677JLv+ZVTX5AxLvW5OB4zt5uS+zB62wJ/Wv+jXGAttSAcJec4iFgCWH
+Rvdi/jJoSzRLa3nEzx6pFIzclSCnh0u1xCeLcUBypSiPga8W+6PkuoyQq8U9qs9E
+oxG5NvrvlyshwUS9yvcZRGw7Ljlx4jJH/BhIPR8kIBCQj1vna9TziZOrw1Of8hDU
+bHKFG9Pm8Dp2vbjz/2JH39qvxshPKVllGfq+5klPm7yZRUYTiCMAbqwNdL/nsqF2
+Rnnyp58XRStJ
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIGSzCCBDOgAwIBAgIRAJvUQHUeRiPp62D8LGqVNMcwDQYJKoZIhvcNAQEMBQAw
+XzELMAkGA1UEBhMCR0IxGDAWBgNVBAoTD1NlY3RpZ28gTGltaXRlZDE2MDQGA1UE
+AxMtU2VjdGlnbyBQdWJsaWMgU2VydmVyIEF1dGhlbnRpY2F0aW9uIFJvb3QgUjQ2
+MB4XDTI0MDczMTAwMDAwMFoXDTM0MDczMDIzNTk1OVowZjELMAkGA1UEBhMCQUUx
+GTAXBgNVBAoTEFNTTDJCVVkgRU1FQSBMTEMxPDA6BgNVBAMTM1NTTDJCVVkgRU1F
+QSBSU0EgRG9tYWluIFZhbGlkYXRpb24gU2VjdXJlIFNlcnZlciBDQTCCAaIwDQYJ
+KoZIhvcNAQEBBQADggGPADCCAYoCggGBALsbge3dwtQ6DNyJOcsZ+ZNJw/wpFgoW
+xtz5f07UlYcc5ob1YU5hUbwTdfCHl3p2NiIjYedo2jb0qmgD8x0fycJ4yNG0hQRy
+ptIUSkzyCEfG5QbNLK8osOPq/b274qVYuh7FeGk08JO050i7yJdUyYT3FlrTr/BA
+hy2ckfwu27j63NVWzmT+piryjtCa2md1Txpmn0P2JedZKdzO3nopLYrvQ7ulxh0k
+kZFG0QJbTwIC2miuExxTsLfr88dy2OiArQ7mts4aJJTWGxKGP14qTQiv9La5GUwV
+y1j4tSxMVJtrQyhdXrAqydo7Z/CP8Crw/5aUlK1DRu7kTQ36S2CJD1M65h7sYaZc
+TuXUGcgmeQXBeVsUYPQB7jsrkgaZLEwliyrWF8YUJcYfYHzKqb5TVuMljDsKLweI
+1dowbB6B21QpWHwf0n2kCJPR0R2daKClSR9cVi/WyyMBy7zBnMVW6XvfQqH6qrs3
+7oGjZhS+XmzgIJIrW9+G46zhw02QiyclLQIDAQABo4IBeTCCAXUwHwYDVR0jBBgw
+FoAUVnNYZJX5khqwEioEYnmhQBWIIUkwHQYDVR0OBBYEFIFZSMm65QBv37f/UMWr
+793m5K6QMA4GA1UdDwEB/wQEAwIBhjASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1Ud
+JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjATBgNVHSAEDDAKMAgGBmeBDAECATBU
+BgNVHR8ETTBLMEmgR6BFhkNodHRwOi8vY3JsLnNlY3RpZ28uY29tL1NlY3RpZ29Q
+dWJsaWNTZXJ2ZXJBdXRoZW50aWNhdGlvblJvb3RSNDYuY3JsMIGEBggrBgEFBQcB
+AQR4MHYwTwYIKwYBBQUHMAKGQ2h0dHA6Ly9jcnQuc2VjdGlnby5jb20vU2VjdGln
+b1B1YmxpY1NlcnZlckF1dGhlbnRpY2F0aW9uUm9vdFI0Ni5wN2MwIwYIKwYBBQUH
+MAGGF2h0dHA6Ly9vY3NwLnNlY3RpZ28uY29tMA0GCSqGSIb3DQEBDAUAA4ICAQAI
+Lv4hSPNBcCiZPejKD1/xCJsZjLEHiQDEMCABEQ3wzmdKlCGxeKBhyi46URu0BKLY
+SoDHT/qXa1QOxt8lUYn1LkGwiN2jWgUn8UK3VloGxmHgKQ9OuAH893TyQNktvZLr
+35Ve9qREIBlBNtfNlwqBsm2Z3Vyzd1r+iZJioqG63dSx29Tm9YUcRPzkFXEsrWvp
+3uTpSWWnSEo7FPEKk66RuCy1qDViOuAB5DOAWdM/dB5OL52UxisLf91EvZfZHOu2
+G5KVA45DvXi7Jmgq/9zL9hM74ziNAudWjruOE/cPfPr2HbW5MTXcmcMctSXy93Df
+RqIXoMVHj5ZrZRpxO6vvxNm6wxyizkqOg6WndgTFa13o0Tmva6fVzqVsdm06lNT1
+dQA8tu7c+fdWw98ZIUSNeR9S0b/Rzjl0nr0mITVliDwJJhfsPjijLaCLCXBQqA1h
+nYTWaGt1HYWEVK0L0SpZRqPcBa15QMHX3Y6wd3nNcRrU2OkgMHox0pKnuhbsVblM
+wf5onD0m/CIPJ2pIEKn60Pv8oAXVk19hwHA8IhzSZi8u9atuNJC5vjDj2Uo9bUW1
+UJj7MuKhTihTxYlaib8dh1Oq6k9S6AISeQJFgz/eEYPqyTm+irLaFMM/S6eg9M84
+J/LdTC0VaJ+lSR+7k+6h3usVo1OXybt5lV9hC+Ymqg==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIF3jCCA8agAwIBAgIQAf1tMPyjylGoG7xkDjUDLTANBgkqhkiG9w0BAQwFADCB
+iDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0pl
+cnNleSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNV
+BAMTJVVTRVJUcnVzdCBSU0EgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwHhcNMTAw
+MjAxMDAwMDAwWhcNMzgwMTE4MjM1OTU5WjCBiDELMAkGA1UEBhMCVVMxEzARBgNV
+BAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0plcnNleSBDaXR5MR4wHAYDVQQKExVU
+aGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNVBAMTJVVTRVJUcnVzdCBSU0EgQ2Vy
+dGlmaWNhdGlvbiBBdXRob3JpdHkwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIK
+AoICAQCAEmUXNg7D2wiz0KxXDXbtzSfTTK1Qg2HiqiBNCS1kCdzOiZ/MPans9s/B
+3PHTsdZ7NygRK0faOca8Ohm0X6a9fZ2jY0K2dvKpOyuR+OJv0OwWIJAJPuLodMkY
+tJHUYmTbf6MG8YgYapAiPLz+E/CHFHv25B+O1ORRxhFnRghRy4YUVD+8M/5+bJz/
+Fp0YvVGONaanZshyZ9shZrHUm3gDwFA66Mzw3LyeTP6vBZY1H1dat//O+T23LLb2
+VN3I5xI6Ta5MirdcmrS3ID3KfyI0rn47aGYBROcBTkZTmzNg95S+UzeQc0PzMsNT
+79uq/nROacdrjGCT3sTHDN/hMq7MkztReJVni+49Vv4M0GkPGw/zJSZrM233bkf6
+c0Plfg6lZrEpfDKEY1WJxA3Bk1QwGROs0303p+tdOmw1XNtB1xLaqUkL39iAigmT
+Yo61Zs8liM2EuLE/pDkP2QKe6xJMlXzzawWpXhaDzLhn4ugTncxbgtNMs+1b/97l
+c6wjOy0AvzVVdAlJ2ElYGn+SNuZRkg7zJn0cTRe8yexDJtC/QV9AqURE9JnnV4ee
+UB9XVKg+/XRjL7FQZQnmWEIuQxpMtPAlR1n6BB6T1CZGSlCBst6+eLf8ZxXhyVeE
+Hg9j1uliutZfVS7qXMYoCAQlObgOK6nyTJccBz8NUvXt7y+CDwIDAQABo0IwQDAd
+BgNVHQ4EFgQUU3m/WqorSs9UgOHYm8Cd8rIDZsswDgYDVR0PAQH/BAQDAgEGMA8G
+A1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEMBQADggIBAFzUfA3P9wF9QZllDHPF
+Up/L+M+ZBn8b2kMVn54CVVeWFPFSPCeHlCjtHzoBN6J2/FNQwISbxmtOuowhT6KO
+VWKR82kV2LyI48SqC/3vqOlLVSoGIG1VeCkZ7l8wXEskEVX/JJpuXior7gtNn3/3
+ATiUFJVDBwn7YKnuHKsSjKCaXqeYalltiz8I+8jRRa8YFWSQEg9zKC7F4iRO/Fjs
+8PRF/iKz6y+O0tlFYQXBl2+odnKPi4w2r78NBc5xjeambx9spnFixdjQg3IM8WcR
+iQycE0xyNN+81XHfqnHd4blsjDwSXWXavVcStkNr/+XeTWYRUc+ZruwXtuhxkYze
+Sf7dNXGiFSeUHM9h4ya7b6NnJSFd5t0dCy5oGzuCr+yDZ4XUmFF0sbmZgIn/f3gZ
+XHlKYC6SQK5MNyosycdiyA5d9zZbyuAlJQG03RoHnHcAP9Dc1ew91Pq7P8yF1m9/
+qS3fuQL39ZeatTXaw2ewh0qpKJ4jjv9cJ2vhsE/zB+4ALtRZh8tSQZXq9EfX7mRB
+VXyNWQKV3WKdwrnuWih0hKWbt5DHDAff9Yk2dDLWKMGwsAvgnEzDHNb842m1R0aB
+L6KCq9NjRHDEjf8tM7qtj3u1cIiuPhnPQCjY/MiQu12ZIvVS5ljFH4gxQ+6IHdfG
+jjxDah2nGN59PRbxYvnKkKj9
+-----END CERTIFICATE-----
+EOF_CERT
+
+# Safety check: make sure the key matches the certificate before touching anything
+if command -v openssl >/dev/null 2>&1; then
+  K=$(openssl pkey -in "$TMP/private.key" -pubout 2>/dev/null)
+  C=$(openssl x509 -in "$TMP/cert.crt" -noout -pubkey 2>/dev/null)
+  if [ -z "$K" ] || [ "$K" != "$C" ]; then
+    rm -rf "$TMP"
+    fail "key does not match certificate (or files are corrupt) - nothing was changed"
+  fi
+  log "Key matches certificate"
+  openssl x509 -in "$TMP/cert.crt" -noout -subject -startdate -enddate
+else
+  log "openssl not installed - skipping key/cert match check"
+fi
+
+# Steps 5 & 6: replace private.key and cert.crt (overwrite in place, keeps owner/permissions)
+if ! cat "$TMP/private.key" > ssl/private.key || ! cat "$TMP/cert.crt" > ssl/cert.crt; then
+  rm -rf "$TMP"
+  rm -rf ssl && cp -a "$BACKUP" ssl
+  fail "could not write new files - restored $BACKUP"
+fi
+rm -rf "$TMP"
+log "private.key and cert.crt replaced"
+
+# Step 7: restart the container
+docker restart "$CONTAINER" >/dev/null || fail "docker restart $CONTAINER failed"
+sleep 15
+
+# Automatic rollback if the container did not come back up
+RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
+if [ "$RUNNING" != "true" ]; then
+  log "Container not running after restart - rolling back to $BACKUP"
+  rm -rf ssl && cp -a "$BACKUP" ssl && docker restart "$CONTAINER" >/dev/null
+  fail "rolled back to $BACKUP"
+fi
+log "Container $CONTAINER is running"
+
+# Step 8: check logs (non-blocking, -f would hang the agent)
+echo "---- last 40 log lines ($CONTAINER) ----"
+docker logs --tail 40 "$CONTAINER" 2>&1
+ERR=$(docker logs --since 1m "$CONTAINER" 2>&1 | grep -iE 'ssl|tls|x509|certificate' | grep -iE 'error|fail|invalid')
+if [ -n "$ERR" ]; then
+  log "WARNING: possible SSL errors in logs:"
+  echo "$ERR"
+else
+  log "No SSL errors found in logs"
+fi
+log "DONE"
